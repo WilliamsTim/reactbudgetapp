@@ -8,7 +8,7 @@ import PublicRoutes from './pages/PublicRoutes';
 
 function App() {
   return (
-    <div className="App">
+    <div className="App" style={{display: "flex", height: "100%", width: "100%"}}>
       <BrowserRouter>
         <Routes>
           <Route element={<PrivateRoutes />}>
