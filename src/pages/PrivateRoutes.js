@@ -1,9 +1,12 @@
 import { Navigate, Outlet } from 'react-router-dom'
 
 const PrivateRoutes = () => {
-    let auth = {'token': true}
+    const cookie = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("userId="))
+        ?.split("=")[1];
     return (
-        auth.token ? <Outlet/> : <Navigate to='/login'/>
+        cookie ? <Outlet/> : <Navigate to='/'/>
     )
 }
 

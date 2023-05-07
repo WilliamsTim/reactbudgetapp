@@ -1,9 +1,13 @@
 import { Navigate, Outlet } from 'react-router-dom'
 
 const PublicRoutes = () => {
-    let auth = {'token': false}
+    const cookie = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("userId="))
+    ?.split("=")[1];
+    console.log(cookie)
     return (
-        !auth.token ? <Outlet/> : <Navigate to='/'/>
+        cookie ? <Navigate to='/dashboard'/> : <Outlet/>
     )
 }
 
