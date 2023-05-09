@@ -6,6 +6,7 @@ import AddExpense from './pages/AddExpense';
 import PrivateRoutes from './pages/PrivateRoutes';
 import PublicRoutes from './pages/PublicRoutes';
 import { Button } from '@mui/material';
+import PageNotFound from './pages/PageNotFound';
 
 function App() {
   // variables
@@ -21,7 +22,7 @@ function App() {
     // this needs to find if there is a cookie with the credentials sent back from the log in, if the user is logged in, return true, otherwise false.
     var cookies = document.cookie.split(";");
     for (let i = 0; i < cookies.length; i++) {
-      if (cookies[i].startsWith("userId=")) {
+      if (cookies[i].startsWith("token=")) {
         return true;
       }
     }
@@ -48,7 +49,7 @@ function App() {
           <li><a className="menu__item" href="/addexpense">Add Expense</a></li>
         </ul>
       </div>}
-      <div style={{paddingTop: "64px"}}>
+      <div style={{paddingTop: "64px", display: "flex", width: "100%"}}>
       <BrowserRouter>
         <Routes>
           <Route element={<PrivateRoutes />}>
@@ -58,6 +59,7 @@ function App() {
           <Route element={<PublicRoutes />}>
             <Route path="/" element={<Login />}/>
           </Route>
+          <Route path="*" element={<PageNotFound />} />
         </Routes>
       </BrowserRouter>
       </div>

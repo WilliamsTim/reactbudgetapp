@@ -8,7 +8,7 @@
 
 #banner {
   height: 64px;
-  background-image: linear-gradient(140deg, rgb(135, 0, 135), purple, rgb(121, 0, 121));
+  background-image: linear-gradient(140deg, rgb(116, 0, 116), purple, rgb(140, 0, 140));
   width: 100%;
   position: fixed;
   z-index: 10;

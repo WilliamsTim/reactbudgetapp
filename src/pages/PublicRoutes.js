@@ -3,7 +3,7 @@ import { Navigate, Outlet } from 'react-router-dom'
 const PublicRoutes = () => {
     const cookie = document.cookie
     .split("; ")
-    .find((row) => row.startsWith("userId="))
+    .find((row) => row.startsWith("token="))
     ?.split("=")[1];
     console.log(cookie)
     return (
