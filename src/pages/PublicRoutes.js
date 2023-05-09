@@ -5,7 +5,6 @@ const PublicRoutes = () => {
     .split("; ")
     .find((row) => row.startsWith("token="))
     ?.split("=")[1];
-    console.log(cookie)
     return (
         cookie ? <Navigate to='/dashboard'/> : <Outlet/>
     )

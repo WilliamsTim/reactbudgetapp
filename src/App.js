@@ -1,12 +1,12 @@
 import './App.css';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import AddExpense from './pages/AddExpense';
 import PrivateRoutes from './pages/PrivateRoutes';
 import PublicRoutes from './pages/PublicRoutes';
 import { Button } from '@mui/material';
-import PageNotFound from './pages/PageNotFound';
+import axios from "axios";
 
 function App() {
   // variables
@@ -14,7 +14,12 @@ function App() {
   // functions
   function signOut() {
     // this function can only be called from a button that only shows up if the user is logged in, so it does not need to test that
-    document.cookie = "userId=; expires=Thu, 01 Jan 1970 00:00:01 GMT"
+    const token = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("token="))
+        ?.split("=")[1];
+    axios.post("http://localhost:8888/.netlify/functions/budgetAppSignOut", {token});
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:01 GMT";
     window.location.reload();
   }
 
@@ -59,7 +64,7 @@ function App() {
           <Route element={<PublicRoutes />}>
             <Route path="/" element={<Login />}/>
           </Route>
-          <Route path="*" element={<PageNotFound />} />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>
       </div>
