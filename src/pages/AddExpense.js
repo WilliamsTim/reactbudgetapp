@@ -55,8 +55,9 @@ function AddExpense() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({time: date.$d, price: Number(ref.current[3].value), type: ref.current[5].value, necessary: bool})
+                body: JSON.stringify({time: date.$d.toISOString().slice(0, 10), price: Number(ref.current[3].value), type: ref.current[5].value, necessary: bool})
             })
+            .then((res) => alert(res.status == 200 ? "Expense added successfully" : "There was a problem adding the expense, please try again later"));
         }
         // if it isn't true do nothing, the inputs are not correct.
     }
