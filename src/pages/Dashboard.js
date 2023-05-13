@@ -34,7 +34,7 @@ function Dashboard() {
     function validateFiltersFields() {
         // validate the filters fields
     }
-    function handleSubmit(e) {
+    function changeData(e) {
         e.preventDefault();
         // submit the fields to then refresh the data according to the filters selected and applied
         if (validateFiltersFields()) {
@@ -66,7 +66,7 @@ function Dashboard() {
                 aria-describedby="The filters and options to be applied to the displayed expenses"
             >
                 <Box sx={style}>
-                    <form ref={ref} onSubmit={handleSubmit} style={{display: "flex", margin: "auto", flexDirection: "column", height: "100%", justifyContent: "space-evenly"}}>
+                    <form ref={ref} onSubmit={changeData} style={{display: "flex", margin: "auto", flexDirection: "column", height: "100%", justifyContent: "space-evenly"}}>
                         <div style={{display: "flex", flexDirection: "row"}}>
                             <DatePicker label="Start Date" value={startDate} onChange={(newVal) => setStartDate(newVal)} sx={{width: "145px"}}/>
                             <Typography sx={{margin: "auto"}}>to</Typography>
