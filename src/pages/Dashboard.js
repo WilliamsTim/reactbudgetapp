@@ -30,6 +30,8 @@ function Dashboard() {
     const helperText = "Please enter a valid input";
     const [noEdit, setNoEdit] = useState(true);
     const COLORS = ['#8884d8', '#00C49F', '#0088FE', '#ff6961'];
+    let totalSpending = 0;
+    let necessarySpending = 0;
 
     // functions
     function validateFiltersFields() {
@@ -52,14 +54,15 @@ function Dashboard() {
             })
             // once the backend is all set up change this to change the data state to the response data
             .then((response) => response.status === 200 ? response.json() : null)
-            .then((data) => data != null ? setData(data) : null)
+            .then((data) => {if (data != null) {setData(data); setChartValues()} else alert("There was a problem getting the data, please try again later")})
             .catch((err) => console.log(err));
         }
     }
 
     // set the modal data state and trigger the expense modal
-    function handleExpenseClick(expense) {
-        setModalData(expense);
+    function handleExpenseClick(expense, index) {
+        console.log(expense);
+        setModalData({...expense, index, necessary: expense.necessary == 1 ? true : false});
         setModalOpen(true);
     }
 
@@ -72,12 +75,39 @@ function Dashboard() {
     function handleDelete() {
         // here will be the code for sending the expense info to the backend
         // We can access the necessary data on the modalData state
+        fetch("http://localhost:8888/.netlify/functions/budgetAppDeleteExpense", {
+                method: "DELETE",
+                mode: "cors",
+                credentials: "include",
+                body: JSON.stringify({id: modalData.id}),
+                headers: {
+                    "Content-Type": "application/json",
+                }
+        })
+        .then((response) => {
+            alert(response.status === 204 ? "Successfully deleted expense" : "There was a problem deleting the expense, please try again later");
+            // delete the expense from the data state
+            setModalOpen(false);
+            setNoEdit(true);
+            setData(data.slice(0, modalData.index).concat(data.slice(modalData.index + 1, data.length)));
+            setChartValues();
+        })
+        .catch(() => alert("There was a problem deleting the expense, please try again later"));
     }
 
     // this function will set the chart values and will be called whenether they need to be changed.
     // this will avoid having to call the backend everytime we change the data, instead we can mirror the changes that are happening on the backend on the frontend as well and simply change the data on the front end to match
     function setChartValues() {
         // take our data and go through it altering it how we need to and setting the chart values based upon that data.
+        // go through the data setting values of the different expense types and the necessary expenses
+        // reset total and necessary spending values
+        totalSpending = 0;
+        necessarySpending = 0;
+        // iterate through the data using reduce, and adding all values to total spending, all necessary ones to necessarySpening and mapping all values to their corresponding expense type in the tracker object
+        console.log(data);
+        // const tracker = data.reduce((prev, curr) => {
+            
+        // }, {})
     }
 
     // on render
@@ -92,7 +122,7 @@ function Dashboard() {
             <div style={{display: "flex", flexDirection: "row", marginTop: "10px", height: "100%"}}>
                 <div className="neumorphism" style={{display: "flex", flexDirection: "column", height: "95%", width: "100%", marginRight: "10px", paddingTop: "10px", overflow: "auto", paddingLeft: "15px", paddingRight: "15px"}}>
                     {/* expense container here */}
-                    {data.map((expense) => <div onClick={() => handleExpenseClick(expense)} key={`key-${expense.id}`}style={{display: "flex", flexDirection: "row", justifyContent: "space-evenly", marginTop: "3px", marginBottom: "3px"}}><div style={{width: "33%", display: "flex"}}><Typography sx={{width: "fit-content", margin: "auto"}}>{expense.type}</Typography></div><div style={{width: "33%", display: "flex"}}><Typography sx={{height: "fit-content", margin: "auto"}}>{expense.price}</Typography></div><div style={{width: "33%", display: "flex"}}><Typography sx={{width: "fit-content", margin: "auto"}}>{expense.time}</Typography></div></div>)}
+                    {data.map((expense, index) => <div onClick={() => handleExpenseClick(expense, index)} key={`key-${expense.id}`}style={{display: "flex", flexDirection: "row", justifyContent: "space-evenly", marginTop: "3px", marginBottom: "3px"}}><div style={{width: "33%", display: "flex"}}><Typography sx={{width: "fit-content", margin: "auto"}}>{expense.type}</Typography></div><div style={{width: "33%", display: "flex"}}><Typography sx={{height: "fit-content", margin: "auto"}}>{expense.price}</Typography></div><div style={{width: "33%", display: "flex"}}><Typography sx={{width: "fit-content", margin: "auto"}}>{expense.time}</Typography></div></div>)}
                 </div>
                 <div className='neumorphism' style={{display: "flex", flexDirection: "column", justifyContent: "center", paddingTop: "10px", height: "95%"}}>
                     {/* pie charts go in here */}
@@ -174,10 +204,10 @@ function Dashboard() {
                         <TextField label="Expense Type" value={modalData.type} variant="outlined" InputLabelProps={{shrink: true}} placeholder="E.g. Groceries" error={errors.type} helperText={errors.type ? helperText : ""} InputProps={{readOnly: noEdit}} onChange={(e) => setModalData({...modalData, type: e.target.value})} />
                         <Stack direction="row" spacing={1} alignItems="center" justifyContent="center" >
                         <Typography style={{opacity: modalData.necessary ? "0.5" : "1", transition: "opacity", transitionDuration: "0.5s"}}>Unnecessary</Typography>
-                            <Switch defaultChecked value={modalData.necessary} disabled={noEdit} />
+                            <Switch value={modalData.necessary} disabled={noEdit} />
                         <Typography style={{opacity: modalData.necessary ? "1" : "0.5", transition: "opacity", transitionDuration: "0.5s"}}>Necessary</Typography>
                         </Stack>
-                        {noEdit ? <div style={{width: "100%", display: "flex", justifyContent: "space-evenly"}}><Button color="error" variant="outlined">Delete</Button><Button onClick={() => setNoEdit(false)} variant="outlined">Edit</Button></div> : <div style={{width: "100%", display: "flex", justifyContent: "space-evenly"}}><Button onClick={() => setNoEdit(true)} variant="outlined">Back</Button><Button variant="outlined">Apply</Button></div>}
+                        {noEdit ? <div style={{width: "100%", display: "flex", justifyContent: "space-evenly"}}><Button color="error" variant="outlined" onClick={handleDelete}>Delete</Button><Button onClick={() => setNoEdit(false)} variant="outlined">Edit</Button></div> : <div style={{width: "100%", display: "flex", justifyContent: "space-evenly"}}><Button onClick={() => setNoEdit(true)} variant="outlined">Back</Button><Button variant="outlined">Apply</Button></div>}
                     </form>
                 </Box>
             </Modal>
