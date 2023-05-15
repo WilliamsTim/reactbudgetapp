@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Modal, TextField, InputAdornment, Stack, Switch, Button, Typography } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
-import { PieChart, Pie, Tooltip, Cell } from 'recharts';
 import "./dashboard.css";
-import { render } from '@testing-library/react';
 const dayjs = require("dayjs");
 
 function Dashboard() {
@@ -152,37 +150,6 @@ function Dashboard() {
                 </div>
                 <div className='neumorphism' style={{display: "flex", flexDirection: "column", justifyContent: "center", paddingTop: "10px", height: "95%"}}>
                     {/* pie charts go in here */}
-                    <div>
-                    <Typography>Top Expenses</Typography>
-                    <div style={{display: "flex"}}>{chartExpenses.map((expense, index) => (<div><Typography>{expense.name}</Typography><span style={{backgroundColor: COLORS[index], height: "5px", width: "10px"}}/></div>))}</div>
-                    <PieChart width={300} height={225}>
-                        <Pie
-                            dataKey="value"
-                            isAnimationActive={true}
-                            data={chartExpenses}
-                            outerRadius={80}
-                            labelLine={false}
-                        >
-                            {data.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index]} />)}
-                        </Pie>
-                        <Tooltip />
-                    </PieChart>
-                    </div>
-                    <div>
-                    <Typography>Necessary VS Unnecessary</Typography>
-                    <PieChart width={300} height={225}>
-                        <Pie
-                            dataKey="value"
-                            isAnimationActive={true}
-                            data={necessaryExpenses}
-                            outerRadius={80}
-                            label
-                        >
-                            {necessaryExpenses.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[2 * index + 1]} />)}
-                        </Pie>
-                        <Tooltip />
-                    </PieChart>
-                    </div>
                 </div>
             </div>
             {/* All modals and popups will go under here, all normal component code above here*/}
