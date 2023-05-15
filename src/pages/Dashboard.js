@@ -165,7 +165,7 @@ function Dashboard() {
                         <div style={{display: "flex", flexDirection: "row"}}>
                             <DatePicker label="Start Date" value={startDate} onChange={(newVal) => setStartDate(newVal)} sx={{width: "145px"}}/>
                             <Typography sx={{margin: "auto"}}>to</Typography>
-                            <DatePicker label="End Date" value={endDate} onChange={(newVal) => setStartDate(newVal)} sx={{width: "145px"}}/>
+                            <DatePicker label="End Date" value={endDate} onChange={(newVal) => setEndDate(newVal)} sx={{width: "145px"}}/>
                         </div>
                         <TextField label="Min Price" variant="outlined" InputLabelProps={{shrink: true}} placeholder="E.g. 10.00" InputProps={{startAdornment: (<InputAdornment position="start">$</InputAdornment>)}} error={errors.minPrice} helperText={errors.minPrice ? helperText : ""} onChange={(e) => setMinPrice(e.target.value)} />
                         <TextField label="Max Price" variant="outlined" onChange={(e) => setMaxPrice(e.target.value)} InputLabelProps={{shrink: true}} InputProps={{startAdornment: (<InputAdornment position="start">$</InputAdornment>)}} placeholder="E.g. 1000.00" error={errors.maxPrice} helperText={errors.maxPrice ? helperText : ""} />
