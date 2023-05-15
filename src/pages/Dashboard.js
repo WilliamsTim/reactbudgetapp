@@ -3,6 +3,7 @@ import { Box, Modal, TextField, InputAdornment, Stack, Switch, Button, Typograph
 import { DatePicker } from "@mui/x-date-pickers";
 import { PieChart, Pie, Tooltip, Cell } from 'recharts';
 import "./dashboard.css";
+import { render } from '@testing-library/react';
 const dayjs = require("dayjs");
 
 function Dashboard() {
@@ -61,7 +62,6 @@ function Dashboard() {
 
     // set the modal data state and trigger the expense modal
     function handleExpenseClick(expense, index) {
-        console.log(expense);
         setModalData({...expense, index, necessary: expense.necessary == 1 ? true : false});
         setModalOpen(true);
     }
@@ -105,9 +105,35 @@ function Dashboard() {
         necessarySpending = 0;
         // iterate through the data using reduce, and adding all values to total spending, all necessary ones to necessarySpening and mapping all values to their corresponding expense type in the tracker object
         console.log(data);
-        // const tracker = data.reduce((prev, curr) => {
-            
-        // }, {})
+        let tracker = {};
+        data.forEach((expense) => {
+            const price = Number(expense.price);
+            totalSpending += price;
+            if (expense.necessary == 1) {
+                necessarySpending += Number(price);
+            }
+            if (tracker.hasOwnProperty(expense.type.toLowerCase())) {
+                tracker[expense.type.toLowerCase()] += price;
+            } else {
+                tracker[expense.type.toLowerCase()] = price;
+            }
+        });
+        console.log(totalSpending, tracker)
+        // now we have an object of all the expense types and how much they cost each. We can now iterate through that placing the values into an array and sorting it by the highest value thus getting the top three values and their names and the rest can be discarded and their values taken as "other" for the chart
+        let newChartVals = [];
+        for (let key in tracker) {
+            newChartVals.push({name: key, value: Math.round(tracker[key] * 100) / 100});
+            console.log(typeof tracker[key]);
+        }
+        newChartVals.sort((a, b) => b.value - a.value);
+        newChartVals = newChartVals.slice(0, 3);
+        let otherSpending = totalSpending;
+        for (let arr of newChartVals) {
+            otherSpending -= arr.value;
+        }
+        newChartVals.push({name: "Other", value: Math.round(otherSpending * 100) / 100});
+        setChartExpenses(newChartVals);
+        setNecessaryExpenses([{name: "Necessary", value: Math.round(necessarySpending * 100) / 100}, {name: "Unnecessary", value: Math.round((totalSpending - necessarySpending) * 100) / 100}]);
     }
 
     // on render
@@ -128,13 +154,14 @@ function Dashboard() {
                     {/* pie charts go in here */}
                     <div>
                     <Typography>Top Expenses</Typography>
+                    <div style={{display: "flex"}}>{chartExpenses.map((expense, index) => (<div><Typography>{expense.name}</Typography><span style={{backgroundColor: COLORS[index], height: "5px", width: "10px"}}/></div>))}</div>
                     <PieChart width={300} height={225}>
                         <Pie
                             dataKey="value"
                             isAnimationActive={true}
                             data={chartExpenses}
                             outerRadius={80}
-                            label
+                            labelLine={false}
                         >
                             {data.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index]} />)}
                         </Pie>
@@ -204,7 +231,7 @@ function Dashboard() {
                         <TextField label="Expense Type" value={modalData.type} variant="outlined" InputLabelProps={{shrink: true}} placeholder="E.g. Groceries" error={errors.type} helperText={errors.type ? helperText : ""} InputProps={{readOnly: noEdit}} onChange={(e) => setModalData({...modalData, type: e.target.value})} />
                         <Stack direction="row" spacing={1} alignItems="center" justifyContent="center" >
                         <Typography style={{opacity: modalData.necessary ? "0.5" : "1", transition: "opacity", transitionDuration: "0.5s"}}>Unnecessary</Typography>
-                            <Switch value={modalData.necessary} disabled={noEdit} />
+                            <Switch checked={modalData.necessary} disabled={noEdit} />
                         <Typography style={{opacity: modalData.necessary ? "1" : "0.5", transition: "opacity", transitionDuration: "0.5s"}}>Necessary</Typography>
                         </Stack>
                         {noEdit ? <div style={{width: "100%", display: "flex", justifyContent: "space-evenly"}}><Button color="error" variant="outlined" onClick={handleDelete}>Delete</Button><Button onClick={() => setNoEdit(false)} variant="outlined">Edit</Button></div> : <div style={{width: "100%", display: "flex", justifyContent: "space-evenly"}}><Button onClick={() => setNoEdit(true)} variant="outlined">Back</Button><Button variant="outlined">Apply</Button></div>}
