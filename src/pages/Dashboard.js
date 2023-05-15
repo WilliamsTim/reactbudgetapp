@@ -22,14 +22,14 @@ function Dashboard() {
     const [endDate, setEndDate] = useState(dayjs().set("month", startDate.$M + 1).set("date", 0));
     const [minPrice, setMinPrice] = useState("");
     const [maxPrice, setMaxPrice] = useState("");
-    const [includeUnecessary, setIncludeUnecessary] = useState(true);
+    const [includeUnnecessary, setincludeUnnecessary] = useState(true);
     const [filterOpen, setFilterOpen] = useState(false);
     const [errors, setErrors] = useState({});
     const [modalOpen, setModalOpen] = useState(false);
     const [modalData, setModalData] = useState({});
     const helperText = "Please enter a valid input";
     const [noEdit, setNoEdit] = useState(true);
-    const COLORS = ['#8884d8', '#0088FE', '#00C49F', '#FF8042'];
+    const COLORS = ['#8884d8', '#00C49F', '#0088FE', '#ff6961'];
 
     // functions
     function validateFiltersFields() {
@@ -42,7 +42,7 @@ function Dashboard() {
         if (validateFiltersFields()) {
             // submit
             console.log("fetching data");
-            fetch("http://localhost:8888/.netlify/functions/budgetAppGetExpenses?" + new URLSearchParams({startDate: `${startDate.$y}-${startDate.$M + 1}-${startDate.$D}`, endDate: `${endDate.$y}-${endDate.$M + 1}-${endDate.$D}`, minPrice, maxPrice, includeUnecessary}), {
+            fetch("http://localhost:8888/.netlify/functions/budgetAppGetExpenses?" + new URLSearchParams({startDate: `${startDate.$y}-${startDate.$M + 1}-${startDate.$D}`, endDate: `${endDate.$y}-${endDate.$M + 1}-${endDate.$D}`, minPrice, maxPrice, includeUnnecessary}), {
                 method: "GET",
                 mode: "cors",
                 credentials: "include",
@@ -74,6 +74,12 @@ function Dashboard() {
         // We can access the necessary data on the modalData state
     }
 
+    // this function will set the chart values and will be called whenether they need to be changed.
+    // this will avoid having to call the backend everytime we change the data, instead we can mirror the changes that are happening on the backend on the frontend as well and simply change the data on the front end to match
+    function setChartValues() {
+        // take our data and go through it altering it how we need to and setting the chart values based upon that data.
+    }
+
     // on render
     useEffect(() => {
         changeData();
@@ -100,7 +106,7 @@ function Dashboard() {
                             outerRadius={80}
                             label
                         >
-                            {data.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                            {data.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index]} />)}
                         </Pie>
                         <Tooltip />
                     </PieChart>
@@ -115,7 +121,7 @@ function Dashboard() {
                             outerRadius={80}
                             label
                         >
-                            {necessaryExpenses.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                            {necessaryExpenses.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[2 * index + 1]} />)}
                         </Pie>
                         <Tooltip />
                     </PieChart>
@@ -137,17 +143,17 @@ function Dashboard() {
                             <Typography sx={{margin: "auto"}}>to</Typography>
                             <DatePicker label="End Date" value={endDate} onChange={(newVal) => setStartDate(newVal)} sx={{width: "145px"}}/>
                         </div>
-                        <TextField label="Min Price" variant="outlined" InputLabelProps={{shrink: true}} placeholder="E.g. 10.00" InputProps={{startAdornment: (<InputAdornment position="start">$</InputAdornment>)}} error={errors.minPrice} helperText={errors.minPrice ? helperText : ""} />
-                        <TextField label="Max Price" variant="outlined" InputLabelProps={{shrink: true}} InputProps={{startAdornment: (<InputAdornment position="start">$</InputAdornment>)}} placeholder="E.g. 1000.00" error={errors.maxPrice} helperText={errors.maxPrice ? helperText : ""} />
+                        <TextField label="Min Price" variant="outlined" InputLabelProps={{shrink: true}} placeholder="E.g. 10.00" InputProps={{startAdornment: (<InputAdornment position="start">$</InputAdornment>)}} error={errors.minPrice} helperText={errors.minPrice ? helperText : ""} onChange={(e) => setMinPrice(e.target.value)} />
+                        <TextField label="Max Price" variant="outlined" onChange={(e) => setMaxPrice(e.target.value)} InputLabelProps={{shrink: true}} InputProps={{startAdornment: (<InputAdornment position="start">$</InputAdornment>)}} placeholder="E.g. 1000.00" error={errors.maxPrice} helperText={errors.maxPrice ? helperText : ""} />
                         <div style={{display: "flex", flexDirection: "column", alignItems: "center"}}>
                             <Typography style={{width: "fit-content"}}>Include Unnecessary</Typography>
                             <Stack direction="row" spacing={1} alignItems="center">
-                            <Typography style={{opacity: includeUnecessary ? "0.5" : "1", transition: "opacity", transitionDuration: "0.5s"}}>No</Typography>
-                                <Switch defaultChecked value={includeUnecessary} onChange={() => setIncludeUnecessary(!includeUnecessary)}/>
-                            <Typography style={{opacity: includeUnecessary ? "1" : "0.5", transition: "opacity", transitionDuration: "0.5s"}}>Yes</Typography>
+                            <Typography style={{opacity: includeUnnecessary ? "0.5" : "1", transition: "opacity", transitionDuration: "0.5s"}}>No</Typography>
+                                <Switch defaultChecked value={includeUnnecessary} onChange={() => setincludeUnnecessary(!includeUnnecessary)}/>
+                            <Typography style={{opacity: includeUnnecessary ? "1" : "0.5", transition: "opacity", transitionDuration: "0.5s"}}>Yes</Typography>
                             </Stack>
                         </div>
-                        <Button variant="outlined" type="submit" style={{width: "fit-content", marginLeft: "auto", marginRight: "auto"}}>Add Expense</Button>
+                        <Button variant="outlined" type="submit" style={{width: "fit-content", marginLeft: "auto", marginRight: "auto"}}>Get Expenses</Button>
                     </form>
                 </Box>
             </Modal>
