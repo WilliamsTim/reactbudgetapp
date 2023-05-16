@@ -77,6 +77,31 @@ function Dashboard() {
     function handleExpenseEdit() {
         // here will be the code for sending the edited expense to the backend
         // We can access the necessary data on the modalData state
+        fetch("http://localhost:8888/.netlify/functions/budgetAppEditExpense", {
+            method: "PUT",
+            mode: "cors",
+            credentials: "include",
+            body: JSON.stringify({...modalData, time: modalData.time.format("YYYY-MM-DD")}),
+            headers: {
+                "Content-Type": "application/json",
+            }
+        })
+        .then((response) => {if (response.status === 204) {
+                alert("Successfully edited expense");
+                // expenseData[modalData.index] = modalData;
+                console.log(modalData, data);
+                expenseData = [...data];
+                const modalDataCopy = {...modalData};
+                modalDataCopy.time = modalDataCopy.time.format("YYYY-MM-DD");
+                expenseData[modalDataCopy.index] = modalDataCopy;
+                setData(expenseData);
+                setChartValues();
+                setModalOpen(false);
+                setNoEdit(true);
+            } else {
+                alert("There was a problem editing the expense, please try again later");
+        }})
+        .catch(() => alert("There was a problem editing the expense, please try again later"));
     }
 
     function handleDelete() {
@@ -96,7 +121,8 @@ function Dashboard() {
             // delete the expense from the data state
             setModalOpen(false);
             setNoEdit(true);
-            setData(data.slice(0, modalData.index).concat(data.slice(modalData.index + 1, data.length)));
+            expenseData = expenseData.slice(0, modalData.index).concat(expenseData.slice(modalData.index + 1, expenseData.length));
+            setData(expenseData);
             setChartValues();
         })
         .catch(() => alert("There was a problem deleting the expense, please try again later"));
@@ -108,22 +134,20 @@ function Dashboard() {
         // take our data and go through it altering it how we need to and setting the chart values based upon that data.
         // go through the data setting values of the different expense types and the necessary expenses
         // reset total and necessary spending values
-        console.log("Setting chart values");
         let totalSpending = 0;
         let necessarySpending = 0;
         // iterate through the data using reduce, and adding all values to total spending, all necessary ones to necessarySpening and mapping all values to their corresponding expense type in the tracker object
         let tracker = {};
-        console.log(data);
         expenseData.forEach((expense) => {
             const price = Number(expense.price);
             totalSpending += price;
             if (expense.necessary == 1) {
                 necessarySpending += Number(price);
             }
-            if (tracker.hasOwnProperty(expense.type.toLowerCase())) {
-                tracker[expense.type.toLowerCase()] += price;
+            if (tracker.hasOwnProperty(expense.type)) {
+                tracker[expense.type] += price;
             } else {
-                tracker[expense.type.toLowerCase()] = price;
+                tracker[expense.type] = price;
             }
         });
         // now we have an object of all the expense types and how much they cost each. We can now iterate through that placing the values into an array and sorting it by the highest value thus getting the top three values and their names and the rest can be discarded and their values taken as "other" for the chart
@@ -146,12 +170,13 @@ function Dashboard() {
                     },
                 ],
             });
+            setShowNecessaryChart(true);
         } else setShowNecessaryChart(false);
         // set all the information for the expense type chart
         let labels = [];
         let values = [];
         for (let i = 0; i < chartData.length && i < 3; i++) {
-            labels.push(chartData[i].name);
+            labels.push(chartData[i].name.slice(0, 1).toUpperCase() + chartData[i].name.slice(1, chartData[i].name.length));
             values.push(chartData[i].value);
             totalSpending -= chartData[i].value;
         }
@@ -179,7 +204,7 @@ function Dashboard() {
             <div style={{display: "flex", flexDirection: "row", marginTop: "10px", height: "100%"}}>
                 <div className="neumorphism" style={{display: "flex", flexDirection: "column", height: "95%", width: "100%", marginRight: "10px", paddingTop: "10px", overflow: "auto", paddingLeft: "15px", paddingRight: "15px"}}>
                     {/* expense container here */}
-                    {data.map((expense, index) => <div onClick={() => handleExpenseClick(expense, index)} key={`key-${expense.id}`}style={{display: "flex", flexDirection: "row", justifyContent: "space-evenly", marginTop: "3px", marginBottom: "3px"}}><div style={{width: "33%", display: "flex"}}><Typography sx={{width: "fit-content", margin: "auto"}}>{expense.type}</Typography></div><div style={{width: "33%", display: "flex"}}><Typography sx={{height: "fit-content", margin: "auto"}}>{expense.price}</Typography></div><div style={{width: "33%", display: "flex"}}><Typography sx={{width: "fit-content", margin: "auto"}}>{expense.time}</Typography></div></div>)}
+                    {data.length > 0 ? data.map((expense, index) => <div onClick={() => handleExpenseClick(expense, index)} key={`key-${expense.id}`}style={{display: "flex", flexDirection: "row", justifyContent: "space-evenly", marginTop: "3px", marginBottom: "3px"}}><div style={{width: "33%", display: "flex"}}><Typography sx={{width: "fit-content", margin: "auto"}}>{expense.type.slice(0, 1).toUpperCase() + expense.type.slice(1, expense.type.length)}</Typography></div><div style={{width: "33%", display: "flex"}}><Typography sx={{height: "fit-content", margin: "auto"}}>{expense.price}</Typography></div><div style={{width: "33%", display: "flex"}}><Typography sx={{width: "fit-content", margin: "auto"}}>{expense.time}</Typography></div></div>) : <div>There are currently no expense</div>}
                 </div>
                 <div className='neumorphism' style={{display: "flex", flexDirection: "column", justifyContent: "center", paddingTop: "10px", height: "95%"}}>
                     {/* pie charts go in here */}
@@ -237,10 +262,10 @@ function Dashboard() {
                         <TextField label="Expense Type" value={modalData.type} variant="outlined" InputLabelProps={{shrink: true}} placeholder="E.g. Groceries" error={errors.type} helperText={errors.type ? helperText : ""} InputProps={{readOnly: noEdit}} onChange={(e) => setModalData({...modalData, type: e.target.value})} />
                         <Stack direction="row" spacing={1} alignItems="center" justifyContent="center" >
                         <Typography style={{opacity: modalData.necessary ? "0.5" : "1", transition: "opacity", transitionDuration: "0.5s"}}>Unnecessary</Typography>
-                            <Switch checked={modalData.necessary} disabled={noEdit} />
+                            <Switch checked={modalData.necessary} disabled={noEdit} onChange={(e) => setModalData({...modalData, necessary: !modalData.necessary})} />
                         <Typography style={{opacity: modalData.necessary ? "1" : "0.5", transition: "opacity", transitionDuration: "0.5s"}}>Necessary</Typography>
                         </Stack>
-                        {noEdit ? <div style={{width: "100%", display: "flex", justifyContent: "space-evenly"}}><Button color="error" variant="outlined" onClick={handleDelete}>Delete</Button><Button onClick={() => setNoEdit(false)} variant="outlined">Edit</Button></div> : <div style={{width: "100%", display: "flex", justifyContent: "space-evenly"}}><Button onClick={() => setNoEdit(true)} variant="outlined">Back</Button><Button variant="outlined">Apply</Button></div>}
+                        {noEdit ? <div style={{width: "100%", display: "flex", justifyContent: "space-evenly"}}><Button color="error" variant="outlined" onClick={handleDelete}>Delete</Button><Button onClick={() => setNoEdit(false)} variant="outlined">Edit</Button></div> : <div style={{width: "100%", display: "flex", justifyContent: "space-evenly"}}><Button onClick={() => setNoEdit(true)} variant="outlined">Back</Button><Button variant="outlined" onClick={handleExpenseEdit}>Apply</Button></div>}
                     </form>
                 </Box>
             </Modal>
