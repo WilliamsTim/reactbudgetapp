@@ -21,6 +21,7 @@ function Dashboard() {
             },
         ],
     };
+    let expenseData = [];
     const [chartExpenses, setChartExpenses] = useState(chartDataModel);
     const [necessaryExpenses, setNecessaryExpenses] = useState(chartDataModel);
     const [startDate, setStartDate] = useState(dayjs().set("date", 1));
@@ -43,25 +44,26 @@ function Dashboard() {
         // validate the filters fields
         return true;
     }
-    function changeData(e) {
+    async function changeData(e) {
         e?.preventDefault();
         // submit the fields to then refresh the data according to the filters selected and applied
         if (validateFiltersFields()) {
             // submit
-            fetch("http://localhost:8888/.netlify/functions/budgetAppGetExpenses?" + new URLSearchParams({startDate: `${startDate.$y}-${startDate.$M + 1}-${startDate.$D}`, endDate: `${endDate.$y}-${endDate.$M + 1}-${endDate.$D}`, minPrice, maxPrice, includeUnnecessary}), {
+            const response = await fetch("http://localhost:8888/.netlify/functions/budgetAppGetExpenses?" + new URLSearchParams({startDate: `${startDate.$y}-${startDate.$M + 1}-${startDate.$D}`, endDate: `${endDate.$y}-${endDate.$M + 1}-${endDate.$D}`, minPrice, maxPrice, includeUnnecessary}), {
                 method: "GET",
                 mode: "cors",
                 credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
                 }
-            })
-            // once the backend is all set up change this to change the data state to the response data
-            .then((response) => response.status === 200 ? response.json() : null)
-            .then((data) => {if (data != null) {return setData(data)} else alert("There was a problem getting the data, please try again later")})
-            // for some reasion, the data is not setting correctly in time for the setChartValues function to be called, so now I just have to figure out how to get it to play nice and have the data set by the time I set the chart values because the chart values use that data.
-            .then(() => setChartValues())
-            .catch((err) => alert("There was a problem getting the data, please try again later"));
+            });
+            if (response.status != 200) {
+                alert("There was a problem getting the expenses, please try again later")
+                return;
+            }
+            expenseData = await response.json();
+            setData(expenseData);
+            setChartValues();
         }
     }
 
@@ -111,7 +113,8 @@ function Dashboard() {
         let necessarySpending = 0;
         // iterate through the data using reduce, and adding all values to total spending, all necessary ones to necessarySpening and mapping all values to their corresponding expense type in the tracker object
         let tracker = {};
-        data.forEach((expense) => {
+        console.log(data);
+        expenseData.forEach((expense) => {
             const price = Number(expense.price);
             totalSpending += price;
             if (expense.necessary == 1) {
@@ -132,7 +135,6 @@ function Dashboard() {
         // now iterate through the chart data creating the arrays needed to populate the chartDataModel
         // set all the information for the necessary vs unnecessary chart
         // check if the necessary chart should even be shown
-        console.log(data, tracker, chartData);
         if (includeUnnecessary) {
             setNecessaryExpenses({
                 labels: ["Necessary", "Unnecessary"],
