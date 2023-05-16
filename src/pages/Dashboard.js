@@ -24,6 +24,7 @@ function Dashboard() {
     const [chartExpenses, setChartExpenses] = useState(chartDataModel);
     const [necessaryExpenses, setNecessaryExpenses] = useState(chartDataModel);
     const [startDate, setStartDate] = useState(dayjs().set("date", 1));
+    const [showNecessaryChart, setShowNecessaryChart] = useState(true);
     const [endDate, setEndDate] = useState(dayjs().set("month", startDate.$M + 1).set("date", 0));
     const [minPrice, setMinPrice] = useState("");
     const [maxPrice, setMaxPrice] = useState("");
@@ -34,10 +35,8 @@ function Dashboard() {
     const [modalData, setModalData] = useState({});
     const helperText = "Please enter a valid input";
     const [noEdit, setNoEdit] = useState(true);
-    const necessaryColors = ['##00c455', '#fa5148'];
+    const necessaryColors = ['#00c455', '#fa5148'];
     const normalColors = ['#8884d8', '#00C49F', '#0088FE', '#FF8042'];
-    let totalSpending = 0;
-    let necessarySpending = 0;
 
     // functions
     function validateFiltersFields() {
@@ -59,7 +58,9 @@ function Dashboard() {
             })
             // once the backend is all set up change this to change the data state to the response data
             .then((response) => response.status === 200 ? response.json() : null)
-            .then((data) => {if (data != null) {setData(data); setChartValues()} else alert("There was a problem getting the data, please try again later")})
+            .then((data) => {if (data != null) {return setData(data)} else alert("There was a problem getting the data, please try again later")})
+            // for some reasion, the data is not setting correctly in time for the setChartValues function to be called, so now I just have to figure out how to get it to play nice and have the data set by the time I set the chart values because the chart values use that data.
+            .then(() => setChartValues())
             .catch((err) => alert("There was a problem getting the data, please try again later"));
         }
     }
@@ -105,8 +106,9 @@ function Dashboard() {
         // take our data and go through it altering it how we need to and setting the chart values based upon that data.
         // go through the data setting values of the different expense types and the necessary expenses
         // reset total and necessary spending values
-        totalSpending = 0;
-        necessarySpending = 0;
+        console.log("Setting chart values");
+        let totalSpending = 0;
+        let necessarySpending = 0;
         // iterate through the data using reduce, and adding all values to total spending, all necessary ones to necessarySpening and mapping all values to their corresponding expense type in the tracker object
         let tracker = {};
         data.forEach((expense) => {
@@ -129,26 +131,38 @@ function Dashboard() {
         chartData.sort((a, b) => b.value - a.value);
         // now iterate through the chart data creating the arrays needed to populate the chartDataModel
         // set all the information for the necessary vs unnecessary chart
-        let labels = ["Necessary", "Unnecessary"];
-        let values = [totalSpending, totalSpending - necessarySpending];
-        chartDataModel.labels = labels;
-        chartDataModel.datasets[0].data = values;
-        chartDataModel.datasets[0].backgroundColor = necessaryColors;
-        setNecessaryExpenses(chartDataModel);
+        // check if the necessary chart should even be shown
+        console.log(data, tracker, chartData);
+        if (includeUnnecessary) {
+            setNecessaryExpenses({
+                labels: ["Necessary", "Unnecessary"],
+                datasets: [
+                    {
+                        label: 'Price',
+                        data: [necessarySpending, totalSpending - necessarySpending],
+                        backgroundColor: necessaryColors
+                    },
+                ],
+            });
+        } else setShowNecessaryChart(false);
         // set all the information for the expense type chart
-        labels = [];
-        values = [];
+        let labels = [];
+        let values = [];
         for (let i = 0; i < chartData.length && i < 3; i++) {
             labels.push(chartData[i].name);
             values.push(chartData[i].value);
             totalSpending -= chartData[i].value;
         }
-        labels.push("Other");
-        values.push(totalSpending);
-        chartDataModel.labels = labels;
-        chartDataModel.datasets[0].data = values;
-        chartDataModel.datasets[0].backgroundColor = normalColors;
-        setChartExpenses(chartDataModel);
+        setChartExpenses({
+            labels: [...labels, "Other"],
+            datasets: [
+                {
+                    label: 'Price',
+                    data: [...values, totalSpending],
+                    backgroundColor: normalColors
+                },
+            ],
+        });
     }
 
     // on render
@@ -159,7 +173,7 @@ function Dashboard() {
     // the returned component
     return (
         <div style={{height: "100%", width: "100%", display: "flex", flexDirection:"column", paddingLeft: "10px", paddingRight: "10px"}}>
-            <Typography style={{marginLeft: "auto", marginRight: "auto", fontSize: "20px", textDecoration: "underline", zIndex: 10}} onClick={() => setFilterOpen(true)}>Filters and Options</Typography>
+            <Typography style={{marginLeft: "auto", marginRight: "auto", fontSize: "20px", textDecoration: "underline", zIndex: 1}} onClick={() => setFilterOpen(true)}>Filters and Options</Typography>
             <div style={{display: "flex", flexDirection: "row", marginTop: "10px", height: "100%"}}>
                 <div className="neumorphism" style={{display: "flex", flexDirection: "column", height: "95%", width: "100%", marginRight: "10px", paddingTop: "10px", overflow: "auto", paddingLeft: "15px", paddingRight: "15px"}}>
                     {/* expense container here */}
@@ -167,7 +181,12 @@ function Dashboard() {
                 </div>
                 <div className='neumorphism' style={{display: "flex", flexDirection: "column", justifyContent: "center", paddingTop: "10px", height: "95%"}}>
                     {/* pie charts go in here */}
-                    <Pie data={chartExpenses} />
+                    <div style={{display: "flex", justifyContent: "center", height: "250px", width: "250px"}}>
+                        <Pie data={chartExpenses} />
+                    </div>
+                    {showNecessaryChart && <div style={{display: "flex", justifyContent: "center", height: "250px", width: "250px"}}>
+                        <Pie data={necessaryExpenses} />
+                    </div>}
                 </div>
             </div>
             {/* All modals and popups will go under here, all normal component code above here*/}
