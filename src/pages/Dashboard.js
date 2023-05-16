@@ -1,22 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Modal, TextField, InputAdornment, Stack, Switch, Button, Typography } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Pie } from 'react-chartjs-2';
 import "./dashboard.css";
 const dayjs = require("dayjs");
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 function Dashboard() {
     // variables
     const [data, setData] = useState([]);
-    const [chartExpenses, setChartExpenses] = useState([
-        { name: 'Group A', value: 400 },
-        { name: 'Group B', value: 300 },
-        { name: 'Group C', value: 300 },
-        { name: 'Group D', value: 200 }
-    ]);
-    const [necessaryExpenses, setNecessaryExpenses] = useState([
-        { name: 'Necessary', value: 400 },
-        { name: 'Unncessary', value: 300 }
-    ]);
+    let chartDataModel = {
+        labels: [],
+        datasets: [
+            {
+                label: 'Price',
+                data: [],
+                backgroundColor: []
+            },
+        ],
+    };
+    const [chartExpenses, setChartExpenses] = useState(chartDataModel);
+    const [necessaryExpenses, setNecessaryExpenses] = useState(chartDataModel);
     const [startDate, setStartDate] = useState(dayjs().set("date", 1));
     const [endDate, setEndDate] = useState(dayjs().set("month", startDate.$M + 1).set("date", 0));
     const [minPrice, setMinPrice] = useState("");
@@ -28,7 +34,8 @@ function Dashboard() {
     const [modalData, setModalData] = useState({});
     const helperText = "Please enter a valid input";
     const [noEdit, setNoEdit] = useState(true);
-    const COLORS = ['#8884d8', '#00C49F', '#0088FE', '#ff6961'];
+    const necessaryColors = ['##00c455', '#fa5148'];
+    const normalColors = ['#8884d8', '#00C49F', '#0088FE', '#FF8042'];
     let totalSpending = 0;
     let necessarySpending = 0;
 
@@ -42,7 +49,6 @@ function Dashboard() {
         // submit the fields to then refresh the data according to the filters selected and applied
         if (validateFiltersFields()) {
             // submit
-            console.log("fetching data");
             fetch("http://localhost:8888/.netlify/functions/budgetAppGetExpenses?" + new URLSearchParams({startDate: `${startDate.$y}-${startDate.$M + 1}-${startDate.$D}`, endDate: `${endDate.$y}-${endDate.$M + 1}-${endDate.$D}`, minPrice, maxPrice, includeUnnecessary}), {
                 method: "GET",
                 mode: "cors",
@@ -54,13 +60,13 @@ function Dashboard() {
             // once the backend is all set up change this to change the data state to the response data
             .then((response) => response.status === 200 ? response.json() : null)
             .then((data) => {if (data != null) {setData(data); setChartValues()} else alert("There was a problem getting the data, please try again later")})
-            .catch((err) => console.log(err));
+            .catch((err) => alert("There was a problem getting the data, please try again later"));
         }
     }
 
     // set the modal data state and trigger the expense modal
     function handleExpenseClick(expense, index) {
-        setModalData({...expense, index, necessary: expense.necessary == 1 ? true : false});
+        setModalData({...expense, index, necessary: expense.necessary == 1 ? true : false, time: dayjs(expense.time)});
         setModalOpen(true);
     }
 
@@ -102,7 +108,6 @@ function Dashboard() {
         totalSpending = 0;
         necessarySpending = 0;
         // iterate through the data using reduce, and adding all values to total spending, all necessary ones to necessarySpening and mapping all values to their corresponding expense type in the tracker object
-        console.log(data);
         let tracker = {};
         data.forEach((expense) => {
             const price = Number(expense.price);
@@ -116,22 +121,34 @@ function Dashboard() {
                 tracker[expense.type.toLowerCase()] = price;
             }
         });
-        console.log(totalSpending, tracker)
         // now we have an object of all the expense types and how much they cost each. We can now iterate through that placing the values into an array and sorting it by the highest value thus getting the top three values and their names and the rest can be discarded and their values taken as "other" for the chart
-        let newChartVals = [];
+        let chartData = [];
         for (let key in tracker) {
-            newChartVals.push({name: key, value: Math.round(tracker[key] * 100) / 100});
-            console.log(typeof tracker[key]);
+            chartData.push({name: key, value: tracker[key]});
         }
-        newChartVals.sort((a, b) => b.value - a.value);
-        newChartVals = newChartVals.slice(0, 3);
-        let otherSpending = totalSpending;
-        for (let arr of newChartVals) {
-            otherSpending -= arr.value;
+        chartData.sort((a, b) => b.value - a.value);
+        // now iterate through the chart data creating the arrays needed to populate the chartDataModel
+        // set all the information for the necessary vs unnecessary chart
+        let labels = ["Necessary", "Unnecessary"];
+        let values = [totalSpending, totalSpending - necessarySpending];
+        chartDataModel.labels = labels;
+        chartDataModel.datasets[0].data = values;
+        chartDataModel.datasets[0].backgroundColor = necessaryColors;
+        setNecessaryExpenses(chartDataModel);
+        // set all the information for the expense type chart
+        labels = [];
+        values = [];
+        for (let i = 0; i < chartData.length && i < 3; i++) {
+            labels.push(chartData[i].name);
+            values.push(chartData[i].value);
+            totalSpending -= chartData[i].value;
         }
-        newChartVals.push({name: "Other", value: Math.round(otherSpending * 100) / 100});
-        setChartExpenses(newChartVals);
-        setNecessaryExpenses([{name: "Necessary", value: Math.round(necessarySpending * 100) / 100}, {name: "Unnecessary", value: Math.round((totalSpending - necessarySpending) * 100) / 100}]);
+        labels.push("Other");
+        values.push(totalSpending);
+        chartDataModel.labels = labels;
+        chartDataModel.datasets[0].data = values;
+        chartDataModel.datasets[0].backgroundColor = normalColors;
+        setChartExpenses(chartDataModel);
     }
 
     // on render
@@ -150,6 +167,7 @@ function Dashboard() {
                 </div>
                 <div className='neumorphism' style={{display: "flex", flexDirection: "column", justifyContent: "center", paddingTop: "10px", height: "95%"}}>
                     {/* pie charts go in here */}
+                    <Pie data={chartExpenses} />
                 </div>
             </div>
             {/* All modals and popups will go under here, all normal component code above here*/}
@@ -191,8 +209,8 @@ function Dashboard() {
                 <Box sx={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 325, height: 450, bgcolor: 'white', border: '2px solid #000', boxShadow: 24, p: 4, borderRadius: "25px"
     }}>
                     <legend style={{marginLeft: "auto", marginRight: "auto", width: "fit-content"}}>Expense Information</legend>
-                    <form onSubmit={() => console.log("submit form")} style={{display: "flex", margin: "auto", flexDirection: "column", height: "100%", justifyContent: "space-evenly"}}>
-                        <DatePicker label="When" value={dayjs(modalData.time)} onChange={(newVal) => console.log(newVal)} readOnly={noEdit} />
+                    <form style={{display: "flex", margin: "auto", flexDirection: "column", height: "100%", justifyContent: "space-evenly"}}>
+                        <DatePicker label="When" value={modalData.time} onChange={(newVal) => setModalData({...modalData, time: newVal})} readOnly={noEdit} />
                         {/*add input of type number for the price*/}
                         <TextField label="Price" value={modalData.price} variant="outlined" InputLabelProps={{shrink: true}} placeholder="E.g. 52.90" InputProps={{startAdornment: (<InputAdornment position="start">$</InputAdornment>), readOnly: noEdit}} error={errors.price} helperText={errors.price ? helperText : ""} onChange={(e) => setModalData({...modalData, price: e.target.value})} />
                         <TextField label="Expense Type" value={modalData.type} variant="outlined" InputLabelProps={{shrink: true}} placeholder="E.g. Groceries" error={errors.type} helperText={errors.type ? helperText : ""} InputProps={{readOnly: noEdit}} onChange={(e) => setModalData({...modalData, type: e.target.value})} />
